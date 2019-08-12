@@ -27,13 +27,14 @@ class Utils:
         finalList = []
 
         if len(dictList) > 0:
-
-
-
             for inputDict in dictList:
                 entryDict = {}
                 for requiredKey in requiredKeys:
                     entryDict[requiredKey] =  inputDict[requiredKey]
+                    print("****** " + requiredKey)
+                    value = inputDict[requiredKey]
+              
+                    print(type(inputDict[requiredKey]))
                 finalList.append(entryDict)
 
             logger.info(finalList)
@@ -71,10 +72,16 @@ class FrontPageView(APIView):
         sortedOverBoughtList = sorted(overboughtList , key=lambda k:k["rsi"] , reverse=True).copy()
         sortedOverSoldList = sorted(oversoldList , key=lambda k:k["rsi"]).copy()
 
+        topgainersHeaders = [
+            { "key" : "coinpair" , "name" : "Coin Pair" } ,
+            {"key": "pricechangepct", "name": "Price Change (%)"}
+        ]
+
 
 
         response = {"frontpage": tradingStartTime ,
-                    "topgainers" : Utils.filterKeys(topgainers[:10] , ["pricechangepct" , "coinpair"]) ,
+                    "topgainers" : Utils.filterKeys(topgainers[:10] , [ "coinpair" , "pricechangepct" ]) ,
+                    "topgainersheaders" : topgainersHeaders,
                     "toplosers" : Utils.filterKeys(toplosers[:10] , ["pricechangepct" , "coinpair"]) ,
                     "unusualvolume": Utils.filterKeys(unusualVolume[:10] , ["unusualvolume" , "coinpair"]) ,
                     "overbought" : Utils.filterKeys(sortedOverBoughtList[:10] , ["rsi" , "coinpair"]) ,
