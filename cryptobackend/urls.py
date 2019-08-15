@@ -21,5 +21,6 @@ import analysis.views
 
 urlpatterns = [
     url(r'^$', analysis.views.index, name='index'),
-    url(r'^api/' , include('analysis.urls'))
+    url(r'^api/' , include('analysis.urls')),
+    url(r'^(?:.*)/?$',  analysis.views.index, name='index'),
 ]

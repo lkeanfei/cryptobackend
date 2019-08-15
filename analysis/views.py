@@ -30,11 +30,17 @@ class Utils:
             for inputDict in dictList:
                 entryDict = {}
                 for requiredKey in requiredKeys:
-                    entryDict[requiredKey] =  inputDict[requiredKey]
-                    print("****** " + requiredKey)
-                    value = inputDict[requiredKey]
-              
-                    print(type(inputDict[requiredKey]))
+                    valueTypeDict = {}
+                    valueTypeDict["value"] = inputDict[requiredKey]
+
+                    if type(inputDict[requiredKey]) is str:
+                        valueTypeDict["type"] = "string"
+                    elif type(inputDict[requiredKey]) is float:
+                        valueTypeDict["type"] = "float"
+                    elif type(inputDict[requiredKey]) is int:
+                        valueTypeDict["type"] = "int"
+
+                    entryDict[requiredKey] = valueTypeDict
                 finalList.append(entryDict)
 
             logger.info(finalList)
@@ -77,15 +83,39 @@ class FrontPageView(APIView):
             {"key": "pricechangepct", "name": "Price Change (%)"}
         ]
 
+        toplosersHeaders = [
+            {"key": "coinpair", "name": "Coin Pair"},
+            {"key": "pricechangepct", "name": "Price Change (%)"}
+        ]
+
+        unusualVolumeHeaders = [
+            {"key": "coinpair", "name": "Coin Pair"},
+            {"key": "unusualvolume", "name": "Unusual Volume"}
+        ]
+
+        overboughtHeaders  = [
+            {"key": "coinpair", "name": "Coin Pair"},
+            {"key": "rsi", "name": "RSI"}
+        ]
+
+        oversoldHeaders = [
+            {"key": "coinpair", "name": "Coin Pair"},
+            {"key": "rsi", "name": "RSI"}
+        ]
+
 
 
         response = {"frontpage": tradingStartTime ,
                     "topgainers" : Utils.filterKeys(topgainers[:10] , [ "coinpair" , "pricechangepct" ]) ,
                     "topgainersheaders" : topgainersHeaders,
                     "toplosers" : Utils.filterKeys(toplosers[:10] , ["pricechangepct" , "coinpair"]) ,
+                    "toplosersheaders" : toplosersHeaders,
                     "unusualvolume": Utils.filterKeys(unusualVolume[:10] , ["unusualvolume" , "coinpair"]) ,
+                    "unusualvolumeheaders" : unusualVolumeHeaders,
                     "overbought" : Utils.filterKeys(sortedOverBoughtList[:10] , ["rsi" , "coinpair"]) ,
+                    "overboughtheaders" : overboughtHeaders,
                     "oversold" : Utils.filterKeys(sortedOverSoldList[:10] , ["rsi" , "coinpair"]) ,
+                    "oversoldheaders" : oversoldHeaders
                     }
 
         return Response(response)
