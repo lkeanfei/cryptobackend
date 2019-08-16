@@ -50,6 +50,30 @@ class Utils:
 
 class FrontPageView(APIView):
 
+    def calcMAIndicators(self  , allTechnicalsList):
+
+        keys = [ "ema10bullish", "ema20bullish" , "ema50bullish" , "sma10bullish", "sma20bullish" , "sma50bullish" ,
+                 "dema10bullish", "dema20bullish" , "dema50bullish" ,  "wma10bullish", "wma20bullish" , "wma50bullish" ]
+
+        maIndicatorList = []
+
+        for technicals in allTechnicalsList:
+            bullishCnt = 0
+            bearishCnt = 0
+            for key in keys:
+
+                if technicals[key] == 1:
+                    bullishCnt = bullishCnt + 1
+                else:
+                    bearishCnt = bearishCnt + 1
+
+            maIndicatorList.append( {"coinpair" : technicals["coinpair"] , "bullishcnt" : bullishCnt , "bearishcnt" : bearishCnt})
+
+            logger.info(technicals["coinpair"] + " Bullish " + str(bullishCnt) + " Bearish " + str(bearishCnt))
+
+        return maIndicatorList
+
+
 
 
     def post(self , request):
@@ -58,11 +82,24 @@ class FrontPageView(APIView):
 
         tradingStartTime = tradingStartTimeDict["starttime"]
 
-        allTechnicals =  Technicals.objects.filter(Q(starttime = tradingStartTime)).values("pricechangepct" , "coinpair" , "unusualvolume" , "rsi")
+        allTechnicals =  Technicals.objects.filter(Q(starttime = tradingStartTime)).values("pricechangepct" , "coinpair" , "unusualvolume" , "rsi",
+                                                                                           "ema10bullish", "ema20bullish" , "ema50bullish" ,
+                                                                                           "sma10bullish", "sma20bullish" , "sma50bullish" ,
+                                                                                           "dema10bullish", "dema20bullish" , "dema50bullish" ,
+                                                                                           "wma10bullish", "wma20bullish" , "wma50bullish" ,
+                                                                                           "macdindicator")
+
 
         topgainers = sorted(allTechnicals , key= lambda k:k["pricechangepct"] , reverse=True).copy()
         toplosers = sorted(allTechnicals,key= lambda k:k["pricechangepct"]  ).copy()
         unusualVolume = sorted(allTechnicals, key= lambda k:k["unusualvolume"], reverse=True).copy()
+
+        bullishMACDList =  [x for x in allTechnicals if x['macdindicator'] == 'Bullish']
+        bearishMACDList = [x for x in allTechnicals if x['macdindicator'] == 'Bearish']
+
+        macdList = []
+        macdList.extend(bullishMACDList[:5])
+        macdList.extend(bearishMACDList[:5])
 
         overboughtList = []
         oversoldList = []
@@ -77,6 +114,20 @@ class FrontPageView(APIView):
 
         sortedOverBoughtList = sorted(overboughtList , key=lambda k:k["rsi"] , reverse=True).copy()
         sortedOverSoldList = sorted(oversoldList , key=lambda k:k["rsi"]).copy()
+
+        maIndicatorList = self.calcMAIndicators(allTechnicals)
+        sortedBullishMAList = sorted(maIndicatorList , key=lambda k:k["bullishcnt"] ,reverse=True).copy()
+        sortedBearishMAList = sorted(maIndicatorList , key=lambda k:k["bearishcnt"] ,reverse=True).copy()
+
+        bearishMAHeaders = [
+            {"key": "coinpair", "name": "Coin Pair"},
+            {"key": "bearishcnt", "name": "Bearish Indicators"}
+        ]
+
+        bullishMAHeaders = [
+            {"key": "coinpair", "name": "Coin Pair"},
+            {"key": "bullishcnt", "name": "Bullish Indicators"}
+        ]
 
         topgainersHeaders = [
             { "key" : "coinpair" , "name" : "Coin Pair" } ,
@@ -103,9 +154,22 @@ class FrontPageView(APIView):
             {"key": "rsi", "name": "RSI"}
         ]
 
+        macdHeaders = [
+            {"key": "coinpair", "name": "Coin Pair"},
+            {"key": "macdindicator", "name": "Bullish/Bearish"}
+        ]
+
+
+
 
 
         response = {"frontpage": tradingStartTime ,
+                    "bearishma" : Utils.filterKeys( sortedBearishMAList[:10] , ["coinpair" , "bearishcnt"]),
+                    "bearishmaheaders" : bearishMAHeaders,
+                    "bullishma": Utils.filterKeys(sortedBullishMAList[:10], ["coinpair", "bullishcnt"]),
+                    "bullishmaheaders": bullishMAHeaders,
+                    "macd" : Utils.filterKeys( macdList , ["coinpair" , "macdindicator"]),
+                    "macdheaders": macdHeaders,
                     "topgainers" : Utils.filterKeys(topgainers[:10] , [ "coinpair" , "pricechangepct" ]) ,
                     "topgainersheaders" : topgainersHeaders,
                     "toplosers" : Utils.filterKeys(toplosers[:10] , ["pricechangepct" , "coinpair"]) ,

@@ -1,6 +1,25 @@
+current D:\cryptobackend\cryptobackend
+# This is an auto-generated Django model module.
+# You'll have to do the following manually to clean this up:
+#   * Rearrange models' order
+#   * Make sure each model has one field with primary_key=True
+#   * Make sure each ForeignKey has `on_delete` set to the desired behavior.
+#   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
+# Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 
-# Create your models here.
+
+class Availableexchanges(models.Model):
+    name = models.CharField(db_column='Name', max_length=45, blank=True, null=True)  # Field name made lowercase.
+    link = models.CharField(db_column='Link', max_length=255, blank=True, null=True)  # Field name made lowercase.
+    volume = models.FloatField(db_column='Volume', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'AvailableExchanges'
+        unique_together = (('name', 'link'),)
+
+
 class Coin(models.Model):
     name = models.CharField(max_length=45, blank=True, null=True)
     symbol = models.CharField(max_length=45)
@@ -21,6 +40,18 @@ class Coinpair(models.Model):
         managed = False
         db_table = 'CoinPair'
         unique_together = (('market', 'name'),)
+
+
+class Coinpairsinmarkets(models.Model):
+    currency = models.CharField(db_column='Currency', max_length=45, blank=True, null=True)  # Field name made lowercase.
+    coinpair = models.CharField(db_column='CoinPair', max_length=45, blank=True, null=True)  # Field name made lowercase.
+    volume = models.FloatField(db_column='Volume', blank=True, null=True)  # Field name made lowercase.
+    exchange = models.CharField(db_column='Exchange', max_length=45, blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'CoinPairsInMarkets'
+        unique_together = (('exchange', 'coinpair'),)
 
 
 class Hourlydata(models.Model):
@@ -47,6 +78,15 @@ class Market(models.Model):
         managed = False
         db_table = 'Market'
         unique_together = (('id', 'name'),)
+
+
+class Tradingtime(models.Model):
+    exchange = models.CharField(max_length=45, blank=True, null=True)
+    starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'TradingTime'
 
 
 class Technicals(models.Model):
@@ -100,11 +140,3 @@ class Technicals(models.Model):
         managed = False
         db_table = 'technicals'
         unique_together = (('id', 'adx'), ('exchange', 'coinpair', 'starttime'),)
-
-class Tradingtime(models.Model):
-    exchange = models.CharField(max_length=45, blank=True, null=True)
-    starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
-
-    class Meta:
-        managed = False
-        db_table = 'TradingTime'
