@@ -26,9 +26,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '5!(609g!z#kn#_2s#j5i_4g!8)+1*4i3%y53dz$0+%foqkll%l'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+isProduction = bool(os.environ['PRODUCTION'])
+DEBUG = isProduction
 
-ALLOWED_HOSTS = []
+
+
+ALLOWED_HOSTS = [ "coinelytics.herokuapp.com"]
 
 
 # Application definition
