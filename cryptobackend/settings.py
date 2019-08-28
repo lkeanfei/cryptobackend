@@ -31,7 +31,7 @@ DEBUG = isProduction
 
 
 
-ALLOWED_HOSTS = [ "coinelytics.herokuapp.com"]
+ALLOWED_HOSTS = [ "coinelytics.herokuapp.com" ,"localhost"]
 
 
 # Application definition
