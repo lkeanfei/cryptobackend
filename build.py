@@ -40,7 +40,7 @@ for sourceJSScript in sourceJSFiles:
             with gzip.open(currentDir + "/static/js/" + sourceJSScript + '.gz', 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
 
-        # shutil.copy(reactBuildPath + "/static/js/" + sourceJSScript , currentDir + "/static/js/")
+        shutil.copy(reactBuildPath + "/static/js/" + sourceJSScript , currentDir + "/static/js/")
 
 sourceCSSFiles = os.listdir(reactBuildPath + "/static/css")
 
