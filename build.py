@@ -1,4 +1,5 @@
 import os, shutil
+import gzip
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
 
@@ -35,7 +36,11 @@ sourceJSFiles = os.listdir(reactBuildPath + "/static/js")
 for sourceJSScript in sourceJSFiles:
 
     if ".js.map" not in sourceJSScript:
-        shutil.copy(reactBuildPath + "/static/js/" + sourceJSScript , currentDir + "/static/js/")
+        with open(reactBuildPath + "/static/js/" + sourceJSScript, 'rb') as f_in:
+            with gzip.open(currentDir + "/static/js/" + sourceJSScript + '.gz', 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+
+        # shutil.copy(reactBuildPath + "/static/js/" + sourceJSScript , currentDir + "/static/js/")
 
 sourceCSSFiles = os.listdir(reactBuildPath + "/static/css")
 
