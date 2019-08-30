@@ -112,6 +112,8 @@ CORS_ORIGIN_WHITELIST = (
     'http://localhost:5000'
 )
 
+CSRF_TRUSTED_ORIGINS = ['coinelytics.com']
+
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
 
