@@ -83,7 +83,12 @@ class FrontPageView(APIView):
 
         tradingStartTimeDict = Tradingtime.objects.order_by('-starttime').values('starttime').first()
 
+        logger.info('Trading start Time')
+        logger.info(tradingStartTimeDict)
+
         tradingStartTime = tradingStartTimeDict["starttime"]
+
+        logger.info('Finished getting technicals')
 
         allTechnicals =  Technicals.objects.filter(Q(starttime = tradingStartTime)).values("pricechangepct" , "coinpair" , "unusualvolume" , "rsi",
                                                                                            "ema10bullish", "ema20bullish" , "ema50bullish" ,
@@ -91,6 +96,8 @@ class FrontPageView(APIView):
                                                                                            "dema10bullish", "dema20bullish" , "dema50bullish" ,
                                                                                            "wma10bullish", "wma20bullish" , "wma50bullish" ,
                                                                                            "macdindicator")
+
+        logger.info('Finished getting technicals')
 
 
         topgainers = sorted(allTechnicals , key= lambda k:k["pricechangepct"] , reverse=True).copy()
@@ -161,10 +168,6 @@ class FrontPageView(APIView):
             {"key": "coinpair", "name": "Coin Pair"},
             {"key": "macdindicator", "name": "Bullish/Bearish"}
         ]
-
-
-
-
 
         response = {"frontpage": tradingStartTime ,
                     "bearishma" : Utils.filterKeys( sortedBearishMAList[:10] , ["coinpair" , "bearishcnt"]),
