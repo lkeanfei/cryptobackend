@@ -78,6 +78,9 @@ class FrontPageView(APIView):
 
     def post(self , request):
 
+        print("Printing inside Front page view")
+        logger.info('Inside post Front page view')
+
         tradingStartTimeDict = Tradingtime.objects.order_by('-starttime').values('starttime').first()
 
         tradingStartTime = tradingStartTimeDict["starttime"]
