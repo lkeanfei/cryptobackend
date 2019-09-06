@@ -10,7 +10,7 @@ from django.db import models
 
 
 class Technicals(models.Model):
-    coinpair = models.ForeignKey('Coinpair', models.DO_NOTHING, db_column='coinpair', blank=True, null=True)
+    coinpair = models.CharField(max_length=45, blank=True, null=True)
     exchange = models.CharField(max_length=45, blank=True, null=True)
     starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
     upperband = models.FloatField(blank=True, null=True)
@@ -46,6 +46,16 @@ class Technicals(models.Model):
     sma20bullish = models.IntegerField(blank=True, null=True)
     wma10bullish = models.IntegerField(blank=True, null=True)
     wma20bullish = models.IntegerField(blank=True, null=True)
+    dema50 = models.FloatField(blank=True, null=True)
+    dema50bullish = models.IntegerField(blank=True, null=True)
+    sma50 = models.FloatField(blank=True, null=True)
+    sma50bullish = models.IntegerField(blank=True, null=True)
+    wma50 = models.FloatField(blank=True, null=True)
+    wma50bullish = models.IntegerField(blank=True, null=True)
+    ema50 = models.FloatField(blank=True, null=True)
+    ema50bullish = models.IntegerField(blank=True, null=True)
+    macdindicator = models.CharField(max_length=45, blank=True, null=True)
+    starttimelocal = models.DateTimeField(db_column='startTimeLocal', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False

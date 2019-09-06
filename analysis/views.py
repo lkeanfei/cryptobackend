@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Hourlydata
-from .models import Technicals , Tradingtime
+from .models import Technicals , Tradingtime , Technicalsavailablecoinpairs, Technicalsavailablemarkets
 from django.db.models import Q
 from datetime import timedelta
 import logging
@@ -57,6 +57,118 @@ class Utils:
 
 
         return finalList
+
+
+class CoinPairSummaryView(APIView):
+
+    def post(self,request):
+
+        response = {}
+
+        if 'coinpair' in request.data.keys():
+
+            # Get latest trading time
+            startTime = Tradingtime.objects.order_by('-starttime').values('starttime')[0]
+
+
+
+            # Technicals
+            technicalsKwargs = {}
+            technicalsKwargs['starttime'] = startTime['starttime']
+            technicalsKwargs['coinpair'] = request.data['coinpair']
+
+            bullishKeys = [ 'dema10bullish' , 'dema20bullish' , 'dema50bullish' , 'ema10bullish' , 'ema20bullish' , 'ema50bullish', 'sma10bullish' , 'sma20bullish' , 'sma50bullish' ,
+                            'wma10bullish' , 'wma20bullish' , 'wma50bullish']
+
+            technicalRows = Technicals.objects.filter(**technicalsKwargs).values('starttime' , 'exchange' , 'coinpair' , 'rsi', 'dema10bullish' , 'dema20bullish' , 'dema50bullish' ,
+                                                                                 'ema10bullish' , 'ema20bullish' , 'ema50bullish', 'sma10bullish' , 'sma20bullish' , 'sma50bullish' ,
+                                                                                 'wma10bullish' , 'wma20bullish' , 'wma50bullish')
+
+            technicalSummaryList = []
+
+            for technical in technicalRows:
+                bullishCnt = 0
+                bearishCnt = 0
+                summaryDict= {}
+                summaryDict["exchange"] = technical["exchange"]
+                for key in bullishKeys:
+                    if technical[key] == 1:
+                        bullishCnt = bullishCnt + 1
+                    else:
+                        bearishCnt = bearishCnt + 1
+                summaryDict["bullishcnt"] = bullishCnt
+                summaryDict["bearishcnt"] = bearishCnt
+                summaryDict["rsi"] = technical["rsi"]
+                technicalSummaryList.append(summaryDict)
+
+            coinpairheaders = [ {
+                "key" : "exchange",
+                "name" : "Exchange"
+            } ,
+                {
+                    "key" : "bullishcnt",
+                    "name" : "Bullish MAs"
+                }
+                ,
+                {
+                    "key": "bearishcnt",
+                    "name": "Bearsh MAs"
+                }
+            ]
+
+
+            coinpairDataList = []
+            for technicalSummary in technicalSummaryList:
+                coinpairDataDict ={}
+                for key in technicalSummary.keys():
+                    value = technicalSummary[key]
+                    type = "string"
+                    if isinstance(value ,str):
+                        type = "string"
+                    elif isinstance(value ,int):
+                        type = "int"
+                    coinpairDataDict[key] = { "value" : value , "type" : type}
+                coinpairDataList.append(coinpairDataDict)
+
+            response["coinpairdata"] = coinpairDataList
+            response["coinpairheaders"] = coinpairheaders
+
+
+
+
+
+        return Response(response)
+
+
+class AvailableCoinPairsView(APIView):
+
+    def get(self, request):
+
+        response = {}
+
+        coinpairs = Technicalsavailablecoinpairs.objects.all().values('coinpair')
+
+        coinpairList = []
+        for coinpair in coinpairs:
+            coinpairList.append(coinpair["coinpair"])
+
+        response["results"] = coinpairList
+
+        return Response(response)
+
+
+
+
+class AvailableMarketsView(APIView):
+
+    def get(self ,request):
+
+        response = {}
+
+        markets = Technicalsavailablemarkets.objects.all().values('exchange')
+        response["results"] = markets
+
+        return Response(response)
 
 class FrontPageView(APIView):
 
@@ -252,6 +364,9 @@ class TechnicalsSummaryView(APIView):
         response = {}
         if "exchange" in request.data.keys():
             exchange = request.data["exchange"]
+
+            if exchange == "HuobiGlobal":
+                exchange = "Huobi Global"
 
             if exchange in exchangeList:
 

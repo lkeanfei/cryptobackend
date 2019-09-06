@@ -50,7 +50,7 @@ class Market(models.Model):
 
 
 class Technicals(models.Model):
-    coinpair = models.ForeignKey(Coinpair, models.DO_NOTHING, db_column='coinpair', blank=True, null=True)
+    coinpair = models.CharField(max_length=45, blank=True, null=True)
     exchange = models.CharField(max_length=45, blank=True, null=True)
     starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
     upperband = models.FloatField(blank=True, null=True)
@@ -100,6 +100,20 @@ class Technicals(models.Model):
         managed = False
         db_table = 'technicals'
         unique_together = (('id', 'adx'), ('exchange', 'coinpair', 'starttime'),)
+
+class Technicalsavailablemarkets(models.Model):
+    exchange = models.CharField(max_length=45, blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'TechnicalsAvailableMarkets'
+
+class Technicalsavailablecoinpairs(models.Model):
+    coinpair = models.CharField(max_length=45, blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'TechnicalsAvailableCoinPairs'
 
 class Tradingtime(models.Model):
     exchange = models.CharField(max_length=45, blank=True, null=True)

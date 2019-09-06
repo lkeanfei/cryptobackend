@@ -45,7 +45,6 @@ for sourceJSScript in sourceJSFiles:
 sourceCSSFiles = os.listdir(reactBuildPath + "/static/css")
 
 for sourceCSSFile in sourceCSSFiles:
-
     if ".css.map" not in sourceCSSFile:
         shutil.copy(reactBuildPath + "/static/css/" + sourceCSSFile , currentDir + "/static/css/")
     print(sourceCSSFile)
