@@ -23,6 +23,61 @@ class Coinpair(models.Model):
         unique_together = (('market', 'name'),)
 
 
+class Geckocoin(models.Model):
+    id = models.CharField(primary_key=True, max_length=45)
+    symbol = models.CharField(max_length=45, blank=True, null=True)
+    name = models.CharField(max_length=45, blank=True, null=True)
+    valid = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'GeckoCoin'
+
+
+class Geckofundamentals(models.Model):
+    coinid = models.ForeignKey('Geckocoin', models.DO_NOTHING, db_column='coinid', blank=True, null=True)
+    blocktime = models.IntegerField(db_column='BlockTime', blank=True, null=True)  # Field name made lowercase.
+    developer = models.FloatField(db_column='Developer', blank=True, null=True)  # Field name made lowercase.
+    community = models.FloatField(db_column='Community', blank=True, null=True)  # Field name made lowercase.
+    liquidity = models.FloatField(db_column='Liquidity', blank=True, null=True)  # Field name made lowercase.
+    publicinterest = models.FloatField(db_column='PublicInterest', blank=True, null=True)  # Field name made lowercase.
+    starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
+    description = models.TextField(db_column='Description', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'GeckoFundamentals'
+        unique_together = (('coinid', 'starttime'),)
+
+
+
+class Geckopricevolume(models.Model):
+    total_volume = models.FloatField(blank=True, null=True)
+    price_change_24h = models.FloatField(blank=True, null=True)
+    current_price = models.FloatField(blank=True, null=True)
+    high_24h = models.FloatField(blank=True, null=True)
+    low_24h = models.FloatField(blank=True, null=True)
+    price_change_percentage_24h = models.FloatField(blank=True, null=True)
+    price_change_percentage_7d = models.FloatField(blank=True, null=True)
+    price_change_percentage_14d = models.FloatField(blank=True, null=True)
+    price_change_percentage_30d = models.FloatField(blank=True, null=True)
+    price_change_percentage_60d = models.FloatField(blank=True, null=True)
+    price_change_percentage_200d = models.FloatField(blank=True, null=True)
+    price_change_percentage_1y = models.FloatField(blank=True, null=True)
+    market_cap = models.BigIntegerField(blank=True, null=True)
+    market_cap_change_24h = models.FloatField(blank=True, null=True)
+    market_cap_change_percentage_24h = models.FloatField(blank=True, null=True)
+    coinid = models.ForeignKey('Geckocoin', models.DO_NOTHING, db_column='coinid', blank=True, null=True)
+    starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'GeckoPriceVolume'
+        unique_together = (('coinid', 'starttime'),)
+
+
+
+
 class Hourlydata(models.Model):
     id = models.BigAutoField(primary_key=True)
     open = models.FloatField(blank=True, null=True)

@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Hourlydata
-from .models import Technicals , Tradingtime , Technicalsavailablecoinpairs, Technicalsavailablemarkets
+from .models import Technicals , Tradingtime , Technicalsavailablecoinpairs, Technicalsavailablemarkets , Geckofundamentals ,Geckopricevolume
 from django.db.models import Q
 from datetime import timedelta
 import logging
@@ -20,6 +20,14 @@ def index(request):
     return render(request, 'index.html' ,c)
 
 class Utils:
+
+
+    @staticmethod
+    def getTradingStartTime():
+
+        tradingStartTimeDict = Tradingtime.objects.order_by('-starttime').values('starttime').first()
+
+        return tradingStartTimeDict["starttime"]
 
     @staticmethod
     def getDictKeys(dictList):
@@ -170,7 +178,75 @@ class AvailableMarketsView(APIView):
 
         return Response(response)
 
+
 class FrontPageView(APIView):
+
+    def post(self,request):
+
+        # First get the tradingtime
+        tradingStartTime = Utils.getTradingStartTime()
+
+        frontPageKwargs = {}
+        frontPageKwargs["starttime"] = tradingStartTime
+
+        fundamentalsRows = Geckofundamentals.objects.filter(**frontPageKwargs).order_by("-liquidity").values("coinid__name" , "blocktime" , "developer" , "community" , "liquidity" , "publicinterest" , "description")
+
+        response = {}
+
+
+        fundamentalsKeys = ["coinid__name" , "developer" , "community" , "liquidity" , "publicinterest"]
+
+        fundamentalsHeaders = [{
+            "key": "coinid__name",
+            "name": "Coin"
+        },
+            {
+                "key": "developer",
+                "name": "Developer Score"
+            }
+            ,
+            {
+                "key": "community",
+                "name": "Community Score"
+            }
+            ,
+            {
+                "key": "liquidity",
+                "name": "Liquidity Score"
+            }
+            ,
+            {
+                "key": "publicinterest",
+                "name": "Public interest score"
+            }
+        ]
+
+        response["headers"] = fundamentalsHeaders
+        fundList = []
+
+        for resDict in fundamentalsRows:
+            fundColumn = {}
+            for key in fundamentalsKeys:
+                valType = "string"
+                if type(resDict[key]) is str:
+                    valType = "string"
+                elif type(resDict[key]) is float:
+                    valType = "float"
+                elif type(resDict[key]) is int:
+                    valType = "int"
+                fundColumn[key] = { "value" : resDict[key] , "type" : valType}
+
+            fundList.append(fundColumn)
+
+        response["data"] = fundList
+
+        return Response(response)
+
+
+
+
+
+class ArchiveFrontPageView(APIView):
 
     def calcMAIndicators(self  , allTechnicalsList):
 

@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     url(r'^hello/' ,views.HelloApiView.as_view()),
     url(r'frontpage/', views.FrontPageView.as_view()),
+    url(r'archive/', views.ArchiveFrontPageView.as_view()),
     url(r'getavailmarkets/', views.AvailableMarketsView.as_view()),
     url(r'getavailcoinpairs/' , views.AvailableCoinPairsView.as_view()),
     url(r'technicalssummary/', views.TechnicalsSummaryView.as_view()),
