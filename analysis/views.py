@@ -189,9 +189,11 @@ class FrontPageView(APIView):
         frontPageKwargs = {}
         frontPageKwargs["starttime"] = tradingStartTime
 
-        fundamentalsRows = Geckofundamentals.objects.filter(**frontPageKwargs).order_by("-liquidity").values("coinid__name" , "blocktime" , "developer" , "community" , "liquidity" , "publicinterest" , "description")
+        fundamentalsRows = Geckofundamentals.objects.filter(**frontPageKwargs).order_by("-liquidity").values("coinid__name" , "coinid__symbol" , "blocktime" , "developer" , "community" , "liquidity" , "publicinterest" , "description")
 
         response = {}
+
+        print("Length is " + str(len(fundamentalsRows)))
 
 
         fundamentalsKeys = ["coinid__name" , "developer" , "community" , "liquidity" , "publicinterest"]
@@ -228,13 +230,20 @@ class FrontPageView(APIView):
             fundColumn = {}
             for key in fundamentalsKeys:
                 valType = "string"
-                if type(resDict[key]) is str:
+                if key == "coinid__name":
+                    valType = "link"
+                    fundColumn[key] = {"value": resDict[key], "type": valType , "link" : resDict["coinid__symbol"]}
+                elif type(resDict[key]) is str:
                     valType = "string"
+                    fundColumn[key] = {"value": resDict[key], "type": valType}
                 elif type(resDict[key]) is float:
                     valType = "float"
+                    fundColumn[key] = {"value": resDict[key], "type": valType}
                 elif type(resDict[key]) is int:
                     valType = "int"
-                fundColumn[key] = { "value" : resDict[key] , "type" : valType}
+                    fundColumn[key] = {"value": resDict[key], "type": valType}
+
+                # fundColumn[key] = { "value" : resDict[key] , "type" : valType}
 
             fundList.append(fundColumn)
 

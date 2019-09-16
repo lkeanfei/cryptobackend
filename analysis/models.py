@@ -11,6 +11,18 @@ class Coin(models.Model):
         unique_together = (('id', 'symbol'),)
 
 
+
+class Geckocoinpair(models.Model):
+    coin = models.CharField(max_length=45, blank=True, null=True)
+    coinpair = models.CharField(max_length=45, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'GeckoCoinPair'
+        unique_together = (('coin', 'coinpair'),)
+
+
+
 class Coinpair(models.Model):
     baseasset = models.CharField(db_column='baseAsset', max_length=45, blank=True, null=True)  # Field name made lowercase.
     quoteasset = models.CharField(db_column='quoteAsset', max_length=45, blank=True, null=True)  # Field name made lowercase.
