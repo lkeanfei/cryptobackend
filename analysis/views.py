@@ -190,6 +190,20 @@ class CoinView(APIView):
 
             symbol = request.data["coin"]
 
+            # Gets the price history
+
+            historyFilter = {}
+            historyFilter["coinid__symbol"] = symbol
+
+
+            histRows = Geckopricevolume.objects.filter(**historyFilter).values("starttime" , "current_price").order_by("starttime")
+
+            dateSeries = []
+            closeSeries = []
+            for histRow in histRows:
+                dateSeries.append(histRow["starttime"])
+                closeSeries.append(histRow["current_price"])
+
             tradingStartTime = Utils.getTradingStartTime()
 
             geckoPriceVolumeKwargs = {}
@@ -258,6 +272,8 @@ class CoinView(APIView):
 
             response["data"] = coinpairList
             response["headers"] = coinPairHeaders
+            response["dateseries"] = dateSeries
+            response["closeseries"] = closeSeries
 
         return Response(response)
 
@@ -274,6 +290,8 @@ class CoinPairView(APIView):
 
             tradingStartTime = Utils.getTradingStartTime()
 
+
+
             filterKwargs = {}
             filterKwargs["coinpair__iexact"] = coinpair
             filterKwargs["starttime"] = tradingStartTime
@@ -288,8 +306,11 @@ class CoinPairView(APIView):
             movingAverageHeaders = [{"key" : "indicator" , "name" : "Indicator"} ,
                                     {"key" : "value" , "name" : "Value"}]
 
+
+
             allMovingAverageList = []
             marketDict = {}
+            chartDict = {}
             markets =[]
 
             for summaryRow in summaryRows:
@@ -371,12 +392,36 @@ class CoinPairView(APIView):
                 sma50dict["value"] = {"value": sma50, "type": "float"}
                 marketMovAverageList.append(sma50dict)
 
-                marketDict[market] =  marketMovAverageList
+                historyFilters = {}
+                historyFilters["coinpair__iexact"] = coinpair
+                historyFilters["market"] = market
+
+                historyDataRows = Hourlydatatechnicalsview.objects.filter(**historyFilters).values("starttime" , "open", "high" , "low" , "close" , "volume").order_by("starttime")
+                opens = []
+                highs = []
+                lows = []
+                closes = []
+                volumes = []
+                starttimes = []
+                for histDataRow in historyDataRows:
+                    starttimes.append(histDataRow["starttime"])
+                    opens.append(histDataRow["open"])
+                    highs.append(histDataRow["high"])
+                    lows.append(histDataRow["low"])
+                    closes.append(histDataRow["close"])
+                    volumes.append(histDataRow["volume"])
+
+
+
+                marketDict[market] = marketMovAverageList
+                chartDict[market] =  {"starttimes" : starttimes , "opens" : opens , "highs" : highs , "lows" : lows ,
+                                       "closes" : closes , "volumes" : volumes }
 
             response["markets"] = markets
             response["results"] = summaryRows
             response["movingaverages"] = marketDict
             response["movingaveragesheaders"] = movingAverageHeaders
+            response["charts"] = chartDict
 
 
 
