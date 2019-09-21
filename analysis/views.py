@@ -193,13 +193,13 @@ class CoinView(APIView):
             tradingStartTime = Utils.getTradingStartTime()
 
             geckoPriceVolumeKwargs = {}
-            geckoPriceVolumeKwargs["starttime"] = tradingStartTime
+            geckoPriceVolumeKwargs["starttime__lte"] = tradingStartTime
             geckoPriceVolumeKwargs["coinid__symbol"] = symbol
 
             fundamentals = Geckofundamentals.objects.filter(**geckoPriceVolumeKwargs).values('blocktime' , 'developer' , 'community' , 'liquidity' , 'publicinterest' , 'description')
-            priceVolumes = Geckopricevolume.objects.filter(**geckoPriceVolumeKwargs).values('total_volume' , 'price_change_24h' , 'current_price' ,
+            priceVolumes = Geckopricevolume.objects.filter(**geckoPriceVolumeKwargs).values('starttime' , 'total_volume' , 'price_change_24h' , 'current_price' ,
                                                                                             'high_24h' , 'low_24h' , 'price_change_percentage_24h' , 'price_change_percentage_7d' ,
-                                                                                            'market_cap' , 'market_cap_change_percentage_24h')
+                                                                                            'market_cap' , 'market_cap_change_percentage_24h').order_by("starttime")
 
             geckoCoinPairKwargs = {}
             geckoCoinPairKwargs["coin__iexact"] = symbol
@@ -229,8 +229,19 @@ class CoinView(APIView):
                                {"key" : "rsi" , "name" : "RSI"}
                                  ]
 
+            dateseries = []
+            closeseries = []
+
+            for priceVol in priceVolumes:
+                dateseries.append(priceVol["starttime"])
+                closeseries.append(priceVol["current_price"])
+
             response["fundamentals"] = fundamentals
             response["pricevolume"] = priceVolumes
+            response["dateseries"] = dateseries
+            response["closeseries"] = closeseries
+            logger.info(tradingStartTime)
+            logger.info(symbol + " Price volumes is " + str(len(priceVolumes)))
 
             coinpairList = []
 
@@ -274,11 +285,13 @@ class CoinPairView(APIView):
 
             tradingStartTime = Utils.getTradingStartTime()
 
+            rangeStartTime = tradingStartTime - timedelta(days=30)
+
             filterKwargs = {}
             filterKwargs["coinpair__iexact"] = coinpair
-            filterKwargs["starttime"] = tradingStartTime
+            filterKwargs["starttime__gte"] = rangeStartTime
 
-            summaryRows = Hourlydatatechnicalsview.objects.filter(**filterKwargs).values("coinpair", "market",
+            summaryRows = Hourlydatatechnicalsview.objects.filter(**filterKwargs).values( "starttime" ,"coinpair", "market", "open" , "high", "low" ,
                                                                                              "close", "volume", "upperband","midband","lowerband",
                                                                                          "dema10","ema10","sar","sma10","wma10","ad","obv","atr","adx","aroonosc","dx","macd","macdsignal","macdhist","mfi",
                                                                                          "dema20","ema20","sma20","wma20", "dema50","ema50","sma50","wma50",
@@ -290,9 +303,13 @@ class CoinPairView(APIView):
 
             allMovingAverageList = []
             marketDict = {}
+            chartsDict = {}
             markets =[]
 
-            for summaryRow in summaryRows:
+
+            latestTradeRows = [d for d in summaryRows if d["starttime"] == tradingStartTime]
+
+            for summaryRow in latestTradeRows:
 
                 market = summaryRow["market"]
 
@@ -373,11 +390,40 @@ class CoinPairView(APIView):
 
                 marketDict[market] =  marketMovAverageList
 
+            for market in markets:
+
+                marketsOHLCVs = [d for d in summaryRows if d["market"] == market]
+                sortedOHLCVs = sorted(marketsOHLCVs , key = lambda k:k["starttime"])
+                starttimes = []
+                opens = []
+                highs = []
+                lows = []
+                closes = []
+                volumes = []
+
+                for data in sortedOHLCVs:
+                    starttimes.append(data["starttime"])
+                    opens.append(data["open"])
+                    highs.append(data["high"])
+                    lows.append(data["low"])
+                    closes.append(data["close"])
+                    volumes.append(data["volume"])
+                    chartsDict[market] = {}
+                    chartsDict[market]["starttimes"] = starttimes
+                    chartsDict[market]['opens'] = opens
+                    chartsDict[market]["lows"] = lows
+                    chartsDict[market]["highs"] = highs
+                    chartsDict[market]["closes"] = closes
+                    chartsDict[market]["volumes"] = volumes
+
+
+
+
             response["markets"] = markets
             response["results"] = summaryRows
             response["movingaverages"] = marketDict
             response["movingaveragesheaders"] = movingAverageHeaders
-
+            response["charts"] = chartsDict
 
 
         return Response(response)
