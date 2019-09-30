@@ -608,7 +608,7 @@ class FrontPageView(APIView):
             price_vol_list.append(price_vol_column)
 
         # For price change
-        price_change_keys = ["coinid__name" , "price_change_percentage_24h", "price_change_percentage_7d", "price_change_percentage_14d", "price_change_percentage_30d" ,
+        price_change_keys = ["coinid__name" ,  "current_price" , "price_change_percentage_24h", "price_change_percentage_7d", "price_change_percentage_14d", "price_change_percentage_30d" ,
                              "price_change_percentage_60d" , "price_change_percentage_200d" , "price_change_percentage_1y"]
 
         price_change_headers = [
@@ -645,7 +645,7 @@ class FrontPageView(APIView):
                 "name": "Price Change % (200 days)"
             },
             {
-                "key": "price_change_percentage_1y
+                "key": "price_change_percentage_1y",
                 "name": "Price Change % (1 year)"
             }
         ]
@@ -653,7 +653,7 @@ class FrontPageView(APIView):
         price_change_list =[]
         for price_data_row in price_data_rows:
             price_change_column = {}
-            for key in price_vol_keys:
+            for key in price_change_keys:
                 valType = "string"
                 if key == "coinid__name":
                     valType = "link"
