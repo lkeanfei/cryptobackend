@@ -193,11 +193,18 @@ class CoinView(APIView):
 
             tradingStartTime = Utils.getTradingStartTime()
 
+
+            fundamentalsFilter = {}
+            fundamentalsFilter["starttime"] = tradingStartTime
+            fundamentalsFilter["coinid__symbol"] = symbol
+
+
+
+            fundamentals = Geckofundamentals.objects.filter(**fundamentalsFilter).values('blocktime' , 'developer' , 'community' , 'liquidity' , 'publicinterest' , 'description')
+
             geckoPriceVolumeKwargs = {}
             geckoPriceVolumeKwargs["starttime__lte"] = tradingStartTime
             geckoPriceVolumeKwargs["coinid__symbol"] = symbol
-
-            fundamentals = Geckofundamentals.objects.filter(**geckoPriceVolumeKwargs).values('blocktime' , 'developer' , 'community' , 'liquidity' , 'publicinterest' , 'description')
             priceVolumes = Geckopricevolume.objects.filter(**geckoPriceVolumeKwargs).values('starttime' , 'total_volume' , 'price_change_24h' , 'current_price' ,
                                                                                             'high_24h' , 'low_24h' , 'price_change_percentage_24h' , 'price_change_percentage_7d' ,
                                                                                             'market_cap' , 'market_cap_change_percentage_24h').order_by("starttime")
