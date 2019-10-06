@@ -307,6 +307,93 @@ class CoinPairView(APIView):
             logger.info('Delta ' + str(timeD.total_seconds()))
 
 
+            latestTradeRows = [d for d in summaryRows if d["starttime"] == tradingStartTime]
+
+            trend_keys = ["sar" , "adx" ,"macd" , "aroonosc"]
+            trend_headers = [{"key" : "indicator" , "name" : "Indicator"} ,
+                                    {"key" : "value" , "name" : "Value"}]
+
+            trend_dict = {}
+
+            for summaryRow in latestTradeRows:
+                market = summaryRow["market"]
+                trend_list = []
+
+                sar = summaryRow["sar"]
+                sarDict = {}
+                sarDict["indicator"] = { "value" : "Parabolic SAR" , "type" : "string"}
+                sarDict["value"] = { "value" : sar , "type" : "float"}
+                trend_list.append(sarDict)
+
+                adx = summaryRow["adx"]
+                adxDict = {}
+                adxDict["indicator"] = { "value" : "ADX" , "type" : "string"}
+                adxDict["value"] = { "value" : adx , "type" : "float"}
+                trend_list.append(adxDict)
+
+                aroon_osc = summaryRow["aroonosc"]
+                aroonDict = {}
+                aroonDict["indicator"] = { "value" : "Aroon Oscilator" , "type" : "string"}
+                aroonDict["value"] = { "value" : aroon_osc , "type" : "float"}
+                trend_list.append(aroonDict)
+
+                trend_dict[market] = trend_list
+
+
+            volume_keys = ["ad" , "obv"]
+            volume_headers =  [{"key" : "indicator" , "name" : "Indicator"} ,
+                                    {"key" : "value" , "name" : "Value"}]
+
+            volume_dict = {}
+            for summaryRow in latestTradeRows:
+                market = summaryRow["market"]
+                volume_list = []
+
+                ad = summaryRow["ad"]
+                adDict = {}
+                adDict["indicator"] = { "value" : "ADX" , "type" : "string"}
+                adDict["value"] =   { "value" : ad , "type" : "float"}
+                volume_list.append(adDict)
+
+                obv = summaryRow["obv"]
+                obvDict = {}
+                obvDict["indicator"] = {"value": "On Balance Volume", "type": "string"}
+                obvDict["value"] = {"value": obv, "type": "float"}
+                volume_list.append(obvDict)
+
+                volume_dict[market] = volume_list
+
+
+            momentum_keys = ["mfi" , "rsi"]
+            momentum_headers =  [{"key" : "indicator" , "name" : "Indicator"} ,
+                                    {"key" : "value" , "name" : "Value"}]
+
+            momentum_dict = {}
+            for summaryRow in latestTradeRows:
+                market = summaryRow["market"]
+                momentum_list = []
+
+                mfi = summaryRow["mfi"]
+                mfiDict = {}
+                mfiDict["indicator"] = {"value": "Money Flow Index", "type": "string"}
+                mfiDict["value"] = {"value": mfi, "type": "float"}
+                momentum_list.append(mfiDict)
+
+                rsi = summaryRow["rsi"]
+                rsiDict = {}
+                rsiDict["indicator"] = {"value": "Relative Strength Index", "type": "string"}
+                rsiDict["value"] = {"value": rsi, "type": "float"}
+                momentum_list.append(rsiDict)
+
+                momentum_dict[market] = momentum_list
+
+
+
+
+
+            volatility_keys = ["atr"]
+
+
             movingAverageKeys = [ "indicator" , "value" ]
             movingAverageHeaders = [{"key" : "indicator" , "name" : "Indicator"} ,
                                     {"key" : "value" , "name" : "Value"}]
@@ -317,7 +404,6 @@ class CoinPairView(APIView):
             markets =[]
 
 
-            latestTradeRows = [d for d in summaryRows if d["starttime"] == tradingStartTime]
 
             logger.info('Latest trade rows ' + str(len(latestTradeRows)) + ' ' + str(timeD.total_seconds()))
 
@@ -443,6 +529,12 @@ class CoinPairView(APIView):
 
             response["markets"] = markets
             response["results"] = summaryRows
+            response["trend_data"] = trend_dict
+            response["trend_headers"] = trend_headers
+            response["volume_data"] = volume_dict
+            response["volume_headers"] = volume_headers
+            response["momentum_data"] = momentum_dict
+            response["momentum_headers"] = momentum_headers
             response["movingaverages"] = marketDict
             response["movingaveragesheaders"] = movingAverageHeaders
             response["charts"] = chartsDict
