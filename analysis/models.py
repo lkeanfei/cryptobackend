@@ -61,6 +61,23 @@ class Geckofundamentals(models.Model):
         db_table = 'GeckoFundamentals'
         unique_together = (('coinid', 'starttime'),)
 
+class Geckofundamentalsview(models.Model):
+    starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
+    coinid = models.CharField(max_length=45, blank=True, null=True)
+    symbol = models.CharField(max_length=45, blank=True, null=True)
+    blocktime = models.IntegerField(db_column='BlockTime', blank=True, null=True)  # Field name made lowercase.
+    developer = models.FloatField(db_column='Developer', blank=True, null=True)  # Field name made lowercase.
+    community = models.FloatField(db_column='Community', blank=True, null=True)  # Field name made lowercase.
+    liquidity = models.FloatField(db_column='Liquidity', blank=True, null=True)  # Field name made lowercase.
+    publicinterest = models.FloatField(db_column='PublicInterest', blank=True, null=True)  # Field name made lowercase.
+    description = models.TextField(blank=True, null=True)
+    small_img_url = models.CharField(max_length=255, blank=True, null=True)
+    thumb_img_url = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        managed = False  # Created from a view. Don't remove.
+        db_table = 'GeckoFundamentalsView'
+
 
 
 class Geckopricevolume(models.Model):

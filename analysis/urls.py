@@ -7,6 +7,7 @@ urlpatterns = [
     url(r'frontpage/', views.FrontPageView.as_view()),
     url(r'coin/', views.CoinView.as_view()),
     url(r'coinpair/', views.CoinPairView.as_view()),
+    url(r'allcoinpairs/', views.AllCoinPairsView.as_view()),
     url(r'archive/', views.ArchiveFrontPageView.as_view()),
     url(r'getavailmarkets/', views.AvailableMarketsView.as_view()),
     url(r'getavailcoinpairs/' , views.AvailableCoinPairsView.as_view()),

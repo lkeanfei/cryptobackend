@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Hourlydata
-from .models import Technicals , Tradingtime , Hourlydatatechnicalsview , Technicalsavailablecoinpairs, Technicalsavailablemarkets , Geckofundamentals ,Geckopricevolume , Geckocoinpair
+from .models import Technicals , Tradingtime , Hourlydatatechnicalsview , Technicalsavailablecoinpairs, Technicalsavailablemarkets , Geckofundamentals , Geckofundamentalsview ,Geckopricevolume , Geckocoinpair
 from django.db.models import Q
 from datetime import timedelta ,datetime
 
@@ -63,10 +63,28 @@ class Utils:
                     entryDict[requiredKey] = valueTypeDict
                 finalList.append(entryDict)
 
-
-
         return finalList
 
+class AllCoinPairsView(APIView):
+
+    def post(self, request):
+
+        response = {}
+
+        coinpair_rows = Hourlydata.objects.order_by('coinpair').values('coinpair').distinct()
+
+        coinpair_list = []
+
+        for coinpair in coinpair_rows:
+            coinpair_list.append(coinpair['coinpair'])
+
+        results_dict = {}
+
+        for char_num in range(65,91):
+            localcoin_list = [d for d in coinpair_list if d[0] == chr(char_num)]
+            results_dict[chr(char_num)] = localcoin_list
+
+        return Response(results_dict)
 
 class ArchiveCoinPairSummaryView(APIView):
 
@@ -196,11 +214,10 @@ class CoinView(APIView):
 
             fundamentalsFilter = {}
             fundamentalsFilter["starttime"] = tradingStartTime
-            fundamentalsFilter["coinid__symbol"] = symbol
+            fundamentalsFilter["symbol"] = symbol
 
+            fundamentals = Geckofundamentalsview.objects.filter(**fundamentalsFilter).values('coinid' ,'blocktime' , 'developer' , 'community' , 'liquidity' , 'publicinterest' , 'description' , 'small_img_url' , 'thumb_img_url' )
 
-
-            fundamentals = Geckofundamentals.objects.filter(**fundamentalsFilter).values('blocktime' , 'developer' , 'community' , 'liquidity' , 'publicinterest' , 'description')
 
             geckoPriceVolumeKwargs = {}
             geckoPriceVolumeKwargs["starttime__lte"] = tradingStartTime
