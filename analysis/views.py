@@ -67,7 +67,7 @@ class Utils:
 
 class AllCoinPairsView(APIView):
 
-    def post(self, request):
+    def get(self, request):
 
         response = {}
 
@@ -312,6 +312,9 @@ class CoinPairView(APIView):
 
             tradingStartTime = Utils.getTradingStartTime()
 
+            print("trading start time " )
+            print(tradingStartTime)
+
             rangeStartTime = tradingStartTime - timedelta(days=30)
 
             filterKwargs = {}
@@ -340,6 +343,7 @@ class CoinPairView(APIView):
             trend_dict = {}
 
             for summaryRow in latestTradeRows:
+                print(summaryRow)
                 market = summaryRow["market"]
                 trend_list = []
 
@@ -521,6 +525,9 @@ class CoinPairView(APIView):
 
             marketStart = datetime.now()
 
+            print("markets are")
+            print(markets)
+
             for market in markets:
 
                 marketsOHLCVs = [d for d in summaryRows if d["market"] == market]
@@ -581,6 +588,8 @@ class CoinPairView(APIView):
 class FrontPageView(APIView):
 
     def post(self,request):
+
+        startLogTime = datetime.now()
 
         # First get the tradingtime
         tradingStartTime = Utils.getTradingStartTime()
@@ -787,24 +796,17 @@ class FrontPageView(APIView):
 
             price_change_list.append(price_change_column)
 
-
         response["price_change_headers"] = price_change_headers
         response["price_change_data"] = price_change_list
         response["price_vol_headers"] = price_vol_headers
         response["price_vol_data"] = price_vol_list
-
-
-
-
-
-
-
         response["data"] = fundList
 
+        total_dur = datetime.now() - startLogTime
+
+        print("Time taken is " + str(total_dur.total_seconds()))
+
         return Response(response)
-
-
-
 
 
 class ArchiveFrontPageView(APIView):
