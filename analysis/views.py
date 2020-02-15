@@ -583,6 +583,7 @@ class FrontPageView(APIView):
     def post(self,request):
 
         # First get the tradingtime
+        logStartTime = datetime.now()
         tradingStartTime = Utils.getTradingStartTime()
 
         frontPageKwargs = {}
@@ -800,6 +801,9 @@ class FrontPageView(APIView):
 
 
         response["data"] = fundList
+
+        totalDur = datetime.now() - logStartTime
+        print("Total dur is " + str(totalDur.total_seconds()))
 
         return Response(response)
 
