@@ -3,7 +3,8 @@ from django.views.decorators.csrf import csrf_protect
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Hourlydata
-from .models import Technicals , Tradingtime , Hourlydatatechnicalsview , Technicalsavailablecoinpairs, Technicalsavailablemarkets , Geckofundamentals , Geckofundamentalsview ,Geckopricevolume , Geckocoinpair
+from .models import Technicals , Tradingtime , Hourlydatacoinpair, Hourlydatatechnicalsview , Technicalsavailablecoinpairs, Technicalsavailablemarkets , Geckofundamentals , Geckofundamentalsview ,Geckopricevolume , Geckocoinpair
+from .models import Hourlyforecast
 from django.db.models import Q
 from datetime import timedelta ,datetime
 
@@ -39,6 +40,16 @@ class Utils:
 
         return keyList
 
+    @staticmethod
+    def getVarType(var):
+
+        if type(var) == str:
+            return "string"
+
+        else:
+            return "float"
+
+
 
 
     @staticmethod
@@ -65,9 +76,82 @@ class Utils:
 
         return finalList
 
-class AllCoinPairsView(APIView):
+
+class ForecastView(APIView):
 
     def post(self, request):
+
+        response = {}
+
+        forecastheaders = [
+            {
+            "key": "model_type",
+            "name": "Model"
+            },
+            {
+                "key": "forecast_price",
+                "name": "Forecast Price"
+            }
+            ,
+            {
+                "key": "price_diff",
+                "name": "Price Difference"
+            },
+            {
+                "key": "direction",
+                "name": "Price Direction"
+            },
+
+        ]
+
+        startTime = Utils.getTradingStartTime()
+        print(startTime)
+
+        # Technicals
+        forecastKwargs = {}
+        forecastKwargs['starttime'] = startTime
+        forecastKwargs['coinpair'] = request.data['coinpair']
+        forecastKwargs['market'] = request.data['market']
+
+        forecastKeys = [d["key"] for d in forecastheaders]
+
+        print(forecastKeys)
+
+        forecastRows = Hourlyforecast.objects.filter(**forecastKwargs).values("starttime" , "model_type", "forecast_price" , "price_diff" , "direction" )
+
+        forecaseDataList = []
+        if len(forecastRows) == 0:
+            forecastKwargs['starttime'] = startTime - timedelta(hours=1)
+            startTime = startTime - timedelta(hours=1)
+            forecastRows = Hourlyforecast.objects.filter(**forecastKwargs).values("starttime" , "model_type", "forecast_price",
+                                                                                  "price_diff", "direction")
+
+
+        for row in forecastRows:
+            rowDict = {}
+
+            for header in forecastheaders:
+                cellDict = { "value" :  row[header["key"]] , "type" : Utils.getVarType(row[header["key"]])}
+                rowDict[header["key"]] = cellDict
+
+            forecaseDataList.append(rowDict)
+
+
+
+        response["headers"] = forecastheaders
+        response["data"] = forecaseDataList
+        response["starttime"] = startTime
+
+
+
+        return Response(response)
+
+
+
+
+class AllCoinPairsView(APIView):
+
+    def get(self, request):
 
         response = {}
 
@@ -297,6 +381,205 @@ class CoinView(APIView):
 
         return Response(response)
 
+class CoinpairDetailsView(APIView):
+
+    def __init__(self):
+
+        self.data_headers = [{"key": "indicator", "name": "Indicator"},
+                         {"key": "value", "name": "Value"}]
+
+
+    def get_trend_list(self , summaryRow):
+
+        trend_list = []
+
+        sar = summaryRow["sar"]
+        sarDict = {}
+        sarDict["indicator"] = {"value": "Parabolic SAR", "type": "string"}
+        sarDict["value"] = {"value": sar, "type": "float"}
+        trend_list.append(sarDict)
+
+        adx = summaryRow["adx"]
+        adxDict = {}
+        adxDict["indicator"] = {"value": "ADX", "type": "string"}
+        adxDict["value"] = {"value": adx, "type": "float"}
+        trend_list.append(adxDict)
+
+        aroon_osc = summaryRow["aroonosc"]
+        aroonDict = {}
+        aroonDict["indicator"] = {"value": "Aroon Oscilator", "type": "string"}
+        aroonDict["value"] = {"value": aroon_osc, "type": "float"}
+
+        return trend_list
+
+    def get_volume_list(self ,summaryRow):
+        volume_list = []
+
+        ad = summaryRow["ad"]
+        adDict = {}
+        adDict["indicator"] = {"value": "ADX", "type": "string"}
+        adDict["value"] = {"value": ad, "type": "float"}
+        volume_list.append(adDict)
+
+        obv = summaryRow["obv"]
+        obvDict = {}
+        obvDict["indicator"] = {"value": "On Balance Volume", "type": "string"}
+        obvDict["value"] = {"value": obv, "type": "float"}
+        volume_list.append(obvDict)
+
+        return volume_list
+
+    def get_momentum_list(self , summaryRow):
+        momentum_list = []
+
+        mfi = summaryRow["mfi"]
+        mfiDict = {}
+        mfiDict["indicator"] = {"value": "Money Flow Index", "type": "string"}
+        mfiDict["value"] = {"value": mfi, "type": "float"}
+        momentum_list.append(mfiDict)
+
+        rsi = summaryRow["rsi"]
+        rsiDict = {}
+        rsiDict["indicator"] = {"value": "Relative Strength Index", "type": "string"}
+        rsiDict["value"] = {"value": rsi, "type": "float"}
+        momentum_list.append(rsiDict)
+
+        return momentum_list
+
+    def get_movingaverage_list(self, summaryRow):
+
+        marketMovAverageList = []
+
+        marketMovingAverage = {}
+        ema10 = summaryRow["ema10"]
+        marketMovingAverage["indicator"] = {"value": "Exponential Moving Average(10)", "type": "string"}
+        marketMovingAverage["value"] = {"value": ema10, "type": "float"}
+        marketMovAverageList.append(marketMovingAverage)
+
+        dema10 = summaryRow["dema10"]
+        dema10dict = {}
+        dema10dict["indicator"] = {"value": "Double Exponential Moving Average(10)", "type": "string"}
+        dema10dict["value"] = {"value": dema10, "type": "float"}
+        marketMovAverageList.append(dema10dict)
+
+        wma10 = summaryRow["wma10"]
+        wma10dict = {}
+        wma10dict["indicator"] = {"value": "Weighted Moving Average(10)", "type": "string"}
+        wma10dict["value"] = {"value": wma10, "type": "float"}
+        marketMovAverageList.append(wma10dict)
+
+        sma10 = summaryRow["sma10"]
+        sma10dict = {}
+        sma10dict["indicator"] = {"value": "Simple Moving Average(10)", "type": "string"}
+        sma10dict["value"] = {"value": sma10, "type": "float"}
+        marketMovAverageList.append(sma10dict)
+
+        ema20 = summaryRow["ema20"]
+        ema20dict = {}
+        ema20dict["indicator"] = {"value": "Exponential Moving Average(20)", "type": "string"}
+        ema20dict["value"] = {"value": ema20, "type": "float"}
+        marketMovAverageList.append(ema20dict)
+
+        dema20 = summaryRow["dema20"]
+        dema20dict = {}
+        dema20dict["indicator"] = {"value": "Double Exponential Moving Average(20)", "type": "string"}
+        dema20dict["value"] = {"value": dema20, "type": "float"}
+        marketMovAverageList.append(dema20dict)
+
+        wma20 = summaryRow["wma20"]
+        wma20dict = {}
+        wma20dict["indicator"] = {"value": "Weighted Moving Average(20)", "type": "string"}
+        wma20dict["value"] = {"value": wma20, "type": "float"}
+        marketMovAverageList.append(wma20dict)
+
+        sma20 = summaryRow["sma20"]
+        sma20dict = {}
+        sma20dict["indicator"] = {"value": "Simple Moving Average(20)", "type": "string"}
+        sma20dict["value"] = {"value": sma20, "type": "float"}
+        marketMovAverageList.append(sma20dict)
+
+        ema50 = summaryRow["ema50"]
+        ema50dict = {}
+        ema50dict["indicator"] = {"value": "Exponential Moving Average(50)", "type": "string"}
+        ema50dict["value"] = {"value": ema50, "type": "float"}
+        marketMovAverageList.append(ema50dict)
+
+        dema50 = summaryRow["dema50"]
+        dema50dict = {}
+        dema50dict["indicator"] = {"value": "Double Exponential Moving Average(50)", "type": "string"}
+        dema50dict["value"] = {"value": dema50, "type": "float"}
+        marketMovAverageList.append(dema50dict)
+
+        wma50 = summaryRow["wma50"]
+        wma50dict = {}
+        wma50dict["indicator"] = {"value": "Weighted Moving Average(50)", "type": "string"}
+        wma50dict["value"] = {"value": wma50, "type": "float"}
+        marketMovAverageList.append(wma50dict)
+
+        sma50 = summaryRow["sma50"]
+        sma50dict = {}
+        sma50dict["indicator"] = {"value": "Simple Moving Average(50)", "type": "string"}
+        sma50dict["value"] = {"value": sma50, "type": "float"}
+        marketMovAverageList.append(sma50dict)
+
+        return marketMovAverageList
+
+    def post(self, request):
+
+        response = {}
+
+        if "coinpair" in request.data.keys() and "market" in request.data.keys():
+            print("technicals")
+            coinpair = request.data["coinpair"]
+            market = request.data["market"]
+
+            tradingStartTime = Utils.getTradingStartTime()
+
+            print("trading start time ")
+            print(tradingStartTime)
+
+
+
+            filterKwargs = {}
+            filterKwargs["coinpair__iexact"] = coinpair
+            filterKwargs["starttime"] = tradingStartTime
+            filterKwargs["market"] = market
+
+            summaryRows = Hourlydatatechnicalsview.objects.filter(**filterKwargs).values("starttime", "coinpair",
+                                                                                         "market", "open", "high",
+                                                                                         "low",
+                                                                                         "close", "volume", "upperband",
+                                                                                         "midband", "lowerband",
+                                                                                         "dema10", "ema10", "sar",
+                                                                                         "sma10", "wma10", "ad", "obv",
+                                                                                         "atr", "adx", "aroonosc", "dx",
+                                                                                         "macd", "macdsignal",
+                                                                                         "macdhist", "mfi",
+                                                                                         "dema20", "ema20", "sma20",
+                                                                                         "wma20", "dema50", "ema50",
+                                                                                         "sma50", "wma50",
+                                                                                         "rsi", "pricechangepct",
+                                                                                         "unusualvolume",
+                                                                                         "macdindicator")
+
+
+            if len(summaryRows) > 0 :
+                summaryRow = summaryRows[0]
+                momentum_data = self.get_momentum_list(summaryRow)
+                ma_data = self.get_movingaverage_list(summaryRow)
+                trend_data = self.get_trend_list(summaryRow)
+                volume_data = self.get_volume_list(summaryRow)
+
+                response["data_headers"] = self.data_headers
+                response["momentum_data"] = momentum_data
+                response["ma_data"] = ma_data
+                response["trend_data"] = trend_data
+                response["volume_data"] = volume_data
+
+
+
+        return Response(response)
+
 
 
 class CoinPairView(APIView):
@@ -311,6 +594,9 @@ class CoinPairView(APIView):
             coinpair = request.data["coinpair"]
 
             tradingStartTime = Utils.getTradingStartTime()
+
+            print("trading start time " )
+            print(tradingStartTime)
 
             rangeStartTime = tradingStartTime - timedelta(days=30)
 
@@ -340,6 +626,7 @@ class CoinPairView(APIView):
             trend_dict = {}
 
             for summaryRow in latestTradeRows:
+                print(summaryRow)
                 market = summaryRow["market"]
                 trend_list = []
 
@@ -521,6 +808,9 @@ class CoinPairView(APIView):
 
             marketStart = datetime.now()
 
+            print("markets are")
+            print(markets)
+
             for market in markets:
 
                 marketsOHLCVs = [d for d in summaryRows if d["market"] == market]
@@ -582,8 +872,9 @@ class FrontPageView(APIView):
 
     def post(self,request):
 
+        startLogTime = datetime.now()
+
         # First get the tradingtime
-        logStartTime = datetime.now()
         tradingStartTime = Utils.getTradingStartTime()
 
         frontPageKwargs = {}
@@ -788,27 +1079,17 @@ class FrontPageView(APIView):
 
             price_change_list.append(price_change_column)
 
-
         response["price_change_headers"] = price_change_headers
         response["price_change_data"] = price_change_list
         response["price_vol_headers"] = price_vol_headers
         response["price_vol_data"] = price_vol_list
-
-
-
-
-
-
-
         response["data"] = fundList
 
-        totalDur = datetime.now() - logStartTime
-        print("Total dur is " + str(totalDur.total_seconds()))
+        total_dur = datetime.now() - startLogTime
+
+        print("Time taken is " + str(total_dur.total_seconds()))
 
         return Response(response)
-
-
-
 
 
 class ArchiveFrontPageView(APIView):
@@ -967,8 +1248,6 @@ class ArchiveFrontPageView(APIView):
                     }
 
         return Response(response)
-
-
 
 class TechnicalsSummaryView(APIView):
 
@@ -1174,4 +1453,26 @@ class HelloApiView(APIView):
             '789',
         ]
 
-        return Response({'message': 'HelloApiView '})
+
+
+        return Response({'message': 'HelloApiView 123'})
+
+
+class HourlyDataCoinpairView(APIView):
+
+    def post(self, request):
+
+        response = {}
+
+        if "coinpair" in request.data.keys():
+
+            hdcoinpairArgs = {}
+            hdcoinpairArgs["coinpair"] = request.data["coinpair"]
+            rows = Hourlydatacoinpair.objects.filter(**hdcoinpairArgs).values("market")
+
+            coinpair_list= list(map(lambda x: x["market"] , rows))
+            coinpair_list.sort()
+
+            response["markets"]= coinpair_list
+
+        return Response(response)

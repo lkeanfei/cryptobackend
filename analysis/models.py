@@ -104,6 +104,30 @@ class Geckopricevolume(models.Model):
         db_table = 'GeckoPriceVolume'
         unique_together = (('coinid', 'starttime'),)
 
+class Hourlydatacoinpair(models.Model):
+    coinpair = models.CharField(max_length=45, blank=True, null=True)
+    market = models.CharField(max_length=45, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'HourlyDataCoinpair'
+        unique_together = (('coinpair', 'market'),)
+
+class Hourlyforecast(models.Model):
+    starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
+    model_type = models.CharField(max_length=45, blank=True, null=True)
+    market = models.CharField(max_length=45, blank=True, null=True)
+    coinpair = models.CharField(max_length=45, blank=True, null=True)
+    forecast_price = models.FloatField(blank=True, null=True)
+    price_diff = models.FloatField(blank=True, null=True)
+    direction = models.CharField(max_length=5, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'HourlyForecast'
+        unique_together = (('starttime', 'model_type', 'market', 'coinpair'),)
+
+
 class Hourlydatatechnicalsview(models.Model):
     starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
     market = models.CharField(max_length=45, blank=True, null=True)
