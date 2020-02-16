@@ -12,6 +12,22 @@ class Coin(models.Model):
 
 
 
+class Hourlyforcastaccuracy(models.Model):
+    prevstarttime = models.DateTimeField(db_column='prevStartTime', blank=True, null=True)  # Field name made lowercase.
+    mad = models.FloatField(blank=True, null=True)
+    mape = models.FloatField(blank=True, null=True)
+    nfm = models.FloatField(blank=True, null=True)
+    coinpair = models.CharField(max_length=45, blank=True, null=True)
+    market = models.CharField(max_length=45, blank=True, null=True)
+    model_type = models.CharField(max_length=255, blank=True, null=True)
+    starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'HourlyForcastAccuracy'
+        unique_together = (('coinpair', 'market', 'model_type', 'starttime'),)
+
+
 class Geckocoinpair(models.Model):
     coin = models.CharField(max_length=45, blank=True, null=True)
     coinpair = models.CharField(max_length=45, blank=True, null=True)

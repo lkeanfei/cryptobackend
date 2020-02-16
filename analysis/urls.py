@@ -8,6 +8,7 @@ urlpatterns = [
     url(r'coin/', views.CoinView.as_view()),
     url(r'coinpairdetails/', views.CoinpairDetailsView.as_view()),
     url(r'hdcoinpair/', views.HourlyDataCoinpairView.as_view()),
+    url(),
     url(r'coinpair/', views.CoinPairView.as_view()),
     url(r'getforecast/', views.ForecastView.as_view()),
     url(r'^allcoinpairs/$', views.AllCoinPairsView.as_view()),

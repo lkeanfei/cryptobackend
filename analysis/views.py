@@ -1457,6 +1457,33 @@ class HelloApiView(APIView):
 
         return Response({'message': 'HelloApiView 123'})
 
+class HourlyForecastAccuracySummary(APIView):
+
+    def post(self, request):
+        # Given the trading start time , get the summary
+        #  summary  that based on the coinpair ?
+        #  for coinpair , get
+        #  or the method , what is the histogram for the past 1 hour
+        #  past 4 hours , past 8 hours , on all cryptos ?
+        #  1 hour , 4 hour , 8 hour on given crypto
+
+        print("")
+
+
+
+class CoinPairHourlyForecastAccuracy(APIView):
+
+    def post(self, request):
+
+        response = {}
+        #  given the coinpair , and the startTime
+        # Get the Hourly forecast accuracy for coinpair
+        # also get the history for the past 24 hours
+        #  display it to table
+
+
+
+        return Response(response)
 
 class HourlyDataCoinpairView(APIView):
 
