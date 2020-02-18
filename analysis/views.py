@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Hourlydata
 from .models import Technicals , Tradingtime , Hourlydatacoinpair, Hourlydatatechnicalsview , Technicalsavailablecoinpairs, Technicalsavailablemarkets , Geckofundamentals , Geckofundamentalsview ,Geckopricevolume , Geckocoinpair
-from .models import Hourlyforecast
+from .models import Hourlyforecast, Hourlyforcastaccuracy
 from django.db.models import Q
 from datetime import timedelta ,datetime
 
@@ -76,6 +76,46 @@ class Utils:
 
         return finalList
 
+class ForecastSummaryView(APIView):
+
+    def post(self, request):
+
+        response = {}
+
+        startTime = Utils.getTradingStartTime()
+        coinpairMarketArgs = {}
+        coinpairMarketArgs["starttime"] = startTime
+
+        arguments = ["coinpair", "market", "prevstarttime", "mad", "mape", "nfm", "model_type", "starttime"]
+
+        rows = Hourlyforcastaccuracy.objects.filter(**coinpairMarketArgs).values(*arguments)
+
+        coinpairlist = list( set([row["coinpair"] for row in rows]))
+        coinpairlist.sort()
+
+        model_type_list = list(set( [row["model_type"] for row in rows] ))
+        model_type_list.sort()
+
+        # By model type
+        mape_accuracy_dict = {}
+        mad_accuracy_dict = {}
+        for model_type in model_type_list:
+            mape_group = [row["mape"] for row in rows if row["model_type"] == model_type]
+            mape_accuracy_dict[model_type] = mape_group
+
+        #  sort by mad and mape
+        sorted_mape_list = sorted(rows, key= lambda k:k["mape"])
+
+        response["coinpairlist"] = coinpairlist
+        response["modeltypelist"] = model_type_list
+        response["mapeaccuracytbymodel"] = mape_accuracy_dict
+        response["mostaccuratemape"] = sorted_mape_list[:10]
+        response["mostinaccuratemape"] = sorted_mape_list[-10:]
+
+
+
+
+        return Response(response)
 
 class ForecastView(APIView):
 
@@ -136,11 +176,13 @@ class ForecastView(APIView):
 
             forecaseDataList.append(rowDict)
 
-
+        forecastStartTime = startTime + timedelta(hours=1)
+        forecastEndTime = startTime + timedelta(hours=2)
+        timerange = forecastStartTime.strftime("%Y-%m-%d %H:%M") + " - " + forecastEndTime.strftime("%H:%M")
 
         response["headers"] = forecastheaders
         response["data"] = forecaseDataList
-        response["starttime"] = startTime
+        response["timerange"] = timerange
 
 
 
@@ -243,10 +285,6 @@ class ArchiveCoinPairSummaryView(APIView):
 
             response["coinpairdata"] = coinpairDataList
             response["coinpairheaders"] = coinpairheaders
-
-
-
-
 
         return Response(response)
 
@@ -1471,7 +1509,7 @@ class HourlyForecastAccuracySummary(APIView):
 
 
 
-class CoinPairHourlyForecastAccuracy(APIView):
+class CoinPairMarketForecastAccuracyView(APIView):
 
     def post(self, request):
 
@@ -1480,8 +1518,65 @@ class CoinPairHourlyForecastAccuracy(APIView):
         # Get the Hourly forecast accuracy for coinpair
         # also get the history for the past 24 hours
         #  display it to table
+        results = []
+        if "coinpair" in request.data.keys() and "market" in request.data.keys():
+            coinpair = request.data["coinpair"]
+            market = request.data["market"]
 
+            startTime = Utils.getTradingStartTime()
+            past_48h_startTime = startTime - timedelta(hours=48)
 
+            coinpairMarketArgs = {}
+            coinpairMarketArgs["starttime__gte"] = past_48h_startTime
+            coinpairMarketArgs["coinpair"] = coinpair
+            coinpairMarketArgs["market"] = market
+
+            arguments = ["coinpair" , "market" , "prevstarttime" , "mad" , "mape" , "nfm" , "model_type" , "starttime"]
+
+            rows = Hourlyforcastaccuracy.objects.filter(**coinpairMarketArgs).values(*arguments)
+
+            parsed_rows = []
+
+            headers = [ {"key" : "model_type", "name" : "Model type"},
+                        {"key" : "time_range" , "name" : "Forecast range (UTC)"},
+                        {"key": "mad", "name": "MAD(Mean Absolute Deviation)"},
+                       {"key": "mape", "name": "MAPE(Mean Absolute Percentage Error)" },
+                       {"key" : "nfm" ,"name" : "Normalized Forecast Metric (Bias)"}]
+
+            for row in rows:
+
+                parsed_dict = {}
+                for key in row.keys():
+
+                    if key == "prevstarttime" or key == "starttime":
+                        parsed_dict[key] = row[key].strftime("%Y-%m-%d %H:%M")
+                        parsed_dict[key + "_val"] = row[key]
+                    else:
+                        parsed_dict[key] = row[key]
+
+                parsed_rows.append(parsed_dict)
+
+            table_rows = []
+            for parsed_row in parsed_rows:
+
+                table_row_dict = {}
+                table_row_dict["startTime"] =parsed_row["prevstarttime_val"]
+                time_range_start = parsed_row["prevstarttime_val"] + timedelta(hours=1)
+                time_range_end = parsed_row["starttime_val"] + timedelta(hours=1)
+                table_row_dict["time_range"] = { "value" : time_range_start.strftime("%Y-%m-%d %H:%M") + " - " + time_range_end.strftime("%H:%M") , "type" : "string"}
+                for header in headers:
+
+                    if header["key"] != "time_range":
+                        print("header key is " + header["key"])
+                        table_row_dict[header["key"]] = { "value" : parsed_row[header["key"]] , "type" : Utils.getVarType(parsed_row[header["key"]])}
+
+                table_rows.append(table_row_dict)
+
+            sorted_table_rows = sorted(table_rows , key= lambda k:k["startTime"] , reverse=True)
+
+            response["data"] = sorted_table_rows
+            response["headers"] = headers
+            response["alldata"] = parsed_rows
 
         return Response(response)
 
