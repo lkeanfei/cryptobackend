@@ -7,6 +7,8 @@ from .models import Technicals , Tradingtime , Hourlydatacoinpair, Hourlydatatec
 from .models import Hourlyforecast, Hourlyforcastaccuracy
 from django.db.models import Q
 from datetime import timedelta ,datetime
+from statistics import mean, median
+import itertools
 
 import logging
 logger = logging.getLogger("app")
@@ -23,6 +25,59 @@ def index(request):
 
 class Utils:
 
+    @staticmethod
+    def getTableData(headers , data_dict_list):
+
+        row_list = []
+        for data_dict in data_dict_list:
+            rowDict = {}
+            for header in headers:
+                cellDict = {"value": data_dict[header["key"]], "type": Utils.getVarType(data_dict[header["key"]])}
+                rowDict[header["key"]] = cellDict
+            row_list.append(rowDict)
+
+        return row_list
+
+
+
+    @staticmethod
+    def getStatistics(val_list , bin_size , bin_count=5):
+
+        ret_dict = {}
+        ret_dict["mean"] = mean(val_list)
+        ret_dict["median"] = median(val_list)
+
+        max_val = max(val_list)
+
+        bin_start = 0
+
+        bin_list = []
+        while bin_start < max_val:
+            bin_dict = {}
+            bin_dict["start"] = bin_start
+            bin_dict["end"] = bin_start + bin_size
+            bin_dict["count"] = 0
+            bin_list.append(bin_dict)
+            bin_start = bin_start + bin_size
+
+        for val in val_list:
+            for bin in bin_list:
+                if val >= bin["start"] and val < bin["end"]:
+                    bin["count"] = bin["count"] + 1
+                    break
+
+        val_count = len(val_list)
+
+        for bin in bin_list:
+            bin["percentage"] = 100.0* bin["count"]/val_count
+
+        # print("Min val is " + str(min_val))
+        # print("Max val is " + str(max_val))
+        # print("Bin count "+ str(len(bin_list)))
+        ret_dict["valcount"] = len(val_list)
+        ret_dict["bins"] = bin_list[:bin_count]
+
+        return ret_dict
 
     @staticmethod
     def getTradingStartTime():
@@ -98,19 +153,50 @@ class ForecastSummaryView(APIView):
 
         # By model type
         mape_accuracy_dict = {}
-        mad_accuracy_dict = {}
+        mape_dist_dict = {}
         for model_type in model_type_list:
             mape_group = [row["mape"] for row in rows if row["model_type"] == model_type]
+            mape_dist = Utils.getStatistics(mape_group, 0.5)
             mape_accuracy_dict[model_type] = mape_group
+            mape_dist_dict[model_type] = mape_dist
 
         #  sort by mad and mape
         sorted_mape_list = sorted(rows, key= lambda k:k["mape"])
 
-        response["coinpairlist"] = coinpairlist
+        # response["coinpairlist"] = coinpairlist
         response["modeltypelist"] = model_type_list
         response["mapeaccuracytbymodel"] = mape_accuracy_dict
-        response["mostaccuratemape"] = sorted_mape_list[:10]
-        response["mostinaccuratemape"] = sorted_mape_list[-10:]
+        response["mapedist"] = mape_dist_dict
+
+        mapetableheaders =  [ {
+                "key" : "market",
+                "name" : "Market"
+            } ,
+                {
+                    "key" : "coinpair",
+                    "name" : "Bullish MAs"
+                }
+                ,
+                {
+                    "key": "mad",
+                    "name": "MAD"
+                }
+                ,
+                {
+                    "key": "mape",
+                    "name": "MAPE (%)"
+                }
+            ]
+
+        inaccurate_mape_list = sorted(sorted_mape_list[-10:] , key= lambda k:k["mape"] , reverse=True)
+
+        most_acc_mape_list = Utils.getTableData(mapetableheaders , sorted_mape_list[:10])
+        most_inacc_mape_list = Utils.getTableData(mapetableheaders , inaccurate_mape_list)
+        response["mapeheaders"] = mapetableheaders
+        response["mostaccuratemape"] = most_acc_mape_list
+        response["mostinaccuratemape"] = most_inacc_mape_list
+
+        # Top volume at the hour
 
 
 
@@ -1535,6 +1621,15 @@ class CoinPairMarketForecastAccuracyView(APIView):
 
             rows = Hourlyforcastaccuracy.objects.filter(**coinpairMarketArgs).values(*arguments)
 
+            mape_list_dict = {}
+            for key,value_dicts in itertools.groupby(rows , key= lambda x:x["model_type"]):
+                    mape_list = []
+                    for d in value_dicts:
+                        mape_list.append(d["mape"])
+
+                    mape_list_dict[key] = mape_list
+
+
             parsed_rows = []
 
             headers = [ {"key" : "model_type", "name" : "Model type"},
@@ -1577,6 +1672,11 @@ class CoinPairMarketForecastAccuracyView(APIView):
             response["data"] = sorted_table_rows
             response["headers"] = headers
             response["alldata"] = parsed_rows
+            mape_stats_dict = {}
+
+            for key in mape_list_dict:
+                mape_stats_dict[key] = Utils.getStatistics(mape_list_dict[key] , 0.5)
+            response["mape_stats"] = mape_stats_dict
 
         return Response(response)
 
