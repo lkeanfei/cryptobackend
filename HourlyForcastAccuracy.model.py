@@ -1,4 +1,4 @@
-current C:\cryptobackend\cryptobackend
+current D:\cryptobackend\cryptobackend
 # This is an auto-generated Django model module.
 # You'll have to do the following manually to clean this up:
 #   * Rearrange models' order
@@ -18,6 +18,8 @@ class Hourlyforcastaccuracy(models.Model):
     market = models.CharField(max_length=45, blank=True, null=True)
     model_type = models.CharField(max_length=255, blank=True, null=True)
     starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
+    hit = models.IntegerField(blank=True, null=True)
+    directionaccuracy = models.IntegerField(db_column='directionAccuracy', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False

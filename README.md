@@ -21,4 +21,4 @@ INNER JOIN technicals as technicals on hd.startTime = technicals.startTime and h
 
 python manage.py inspectdb  > 2May2019.model.py
 
-python manage.py inspectdb HourlyDataCoinpair > HourlyDataCoinpair.model.py
+python manage.py inspectdb Rolling48hMetrics > Rolling48hMetrics.model.py

@@ -10,6 +10,7 @@ urlpatterns = [
     url(r'hdcoinpair/', views.HourlyDataCoinpairView.as_view()),
     url(r'forecastsummary/' , views.ForecastSummaryView.as_view()),
     url(r'coinpairmarketforecastaccuracy/' , views.CoinPairMarketForecastAccuracyView.as_view()),
+    url(r'rolling48hmetrics/' , views.Rolling48hMetricsView.as_view()),
     url(r'coinpair/', views.CoinPairView.as_view()),
     url(r'getforecast/', views.ForecastView.as_view()),
     url(r'^allcoinpairs/$', views.AllCoinPairsView.as_view()),

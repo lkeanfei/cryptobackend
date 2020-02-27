@@ -10,6 +10,18 @@ class Coin(models.Model):
         db_table = 'Coin'
         unique_together = (('id', 'symbol'),)
 
+class Rolling48Hmetrics(models.Model):
+    market = models.CharField(max_length=45, blank=True, null=True)
+    coinpair = models.CharField(max_length=45, blank=True, null=True)
+    model_type = models.CharField(max_length=45, blank=True, null=True)
+    hits_pct = models.FloatField(blank=True, null=True)
+    diraccuracy_pct = models.FloatField(db_column='dirAccuracy_pct', blank=True, null=True)  # Field name made lowercase.
+    starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'Rolling48hMetrics'
+        unique_together = (('starttime', 'market', 'coinpair', 'model_type'),)
 
 
 class Hourlyforcastaccuracy(models.Model):
@@ -21,6 +33,9 @@ class Hourlyforcastaccuracy(models.Model):
     market = models.CharField(max_length=45, blank=True, null=True)
     model_type = models.CharField(max_length=255, blank=True, null=True)
     starttime = models.DateTimeField(db_column='startTime', blank=True, null=True)  # Field name made lowercase.
+    hit = models.IntegerField(blank=True, null=True)
+    directionaccuracy = models.IntegerField(db_column='directionAccuracy', blank=True,
+                                            null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False

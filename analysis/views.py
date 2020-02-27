@@ -4,12 +4,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Hourlydata
 from .models import Technicals , Tradingtime , Hourlydatacoinpair, Hourlydatatechnicalsview , Technicalsavailablecoinpairs, Technicalsavailablemarkets , Geckofundamentals , Geckofundamentalsview ,Geckopricevolume , Geckocoinpair
-from .models import Hourlyforecast, Hourlyforcastaccuracy
+from .models import Hourlyforecast, Hourlyforcastaccuracy , Rolling48Hmetrics
 from django.db.models import Q
 from datetime import timedelta ,datetime
 from statistics import mean, median
 import itertools
-
+from itertools import groupby
 import logging
 logger = logging.getLogger("app")
 # Create your views here.
@@ -1593,6 +1593,62 @@ class HourlyForecastAccuracySummary(APIView):
 
         print("")
 
+class Rolling48hMetricsView(APIView):
+
+    def post(self, request):
+
+        response = {}
+
+        startTime = Utils.getTradingStartTime()
+        rollingMetricsArgs = {}
+        rollingMetricsArgs["starttime"] = startTime
+        arguments = ["coinpair", "market", "starttime" , "model_type" , "hits_pct" , "diraccuracy_pct"]
+
+        rows = Rolling48Hmetrics.objects.filter(**rollingMetricsArgs).values(*arguments)
+
+        sorted_hits_list = sorted(rows , key = lambda k:k["hits_pct"] )
+
+        most_acc_hits = sorted_hits_list[:10]
+        most_inacc_hits = sorted_hits_list[-10:]
+
+        sorted_diracc_list = sorted(rows , key= lambda k:k["diraccuracy_pct"])
+        most_acc_diracc = sorted_diracc_list[:10]
+        most_inacc_diracc = sorted_diracc_list[-10:]
+
+        hitstableheaders = [{
+            "key": "market",
+            "name": "Market"
+        },
+            {
+                "key": "coinpair",
+                "name": "Coinpair"
+            }
+            ,
+            {
+                "key": "model_type",
+                "name": "Model"
+            }
+            ,
+            {
+                "key": "hits_pct",
+                "name": "Hits (%)"
+            }
+        ]
+
+        most_acc_hits_table_data = Utils.getTableData(hitstableheaders, most_acc_hits )
+        most_inacc_hits_table_data =  Utils.getTableData( hitstableheaders , most_acc_hits)
+        most_acc_diracc_table_data = Utils.getTableData(hitstableheaders , most_acc_diracc)
+        most_inacc_diracc_table_data = Utils.getTableData(hitstableheaders, most_inacc_diracc)
+
+        response["headers"] = hitstableheaders
+        response["most_acc_hits"] = most_acc_hits_table_data
+        response["most_inacc_hits"] = most_inacc_hits_table_data
+        response["most_acc_diracc"] = most_acc_diracc_table_data
+        response["most_inacc_diracc"] = most_inacc_diracc_table_data
+
+
+        return response
+
 
 
 class CoinPairMarketForecastAccuracyView(APIView):
@@ -1617,7 +1673,7 @@ class CoinPairMarketForecastAccuracyView(APIView):
             coinpairMarketArgs["coinpair"] = coinpair
             coinpairMarketArgs["market"] = market
 
-            arguments = ["coinpair" , "market" , "prevstarttime" , "mad" , "mape" , "nfm" , "model_type" , "starttime"]
+            arguments = ["coinpair" , "market" , "prevstarttime" , "mad" , "mape" , "nfm" , "model_type" , "starttime" , "hit" , "directionaccuracy"]
 
             rows = Hourlyforcastaccuracy.objects.filter(**coinpairMarketArgs).values(*arguments)
 
@@ -1677,6 +1733,61 @@ class CoinPairMarketForecastAccuracyView(APIView):
             for key in mape_list_dict:
                 mape_stats_dict[key] = Utils.getStatistics(mape_list_dict[key] , 0.5)
             response["mape_stats"] = mape_stats_dict
+
+            # For line charts datam
+            mape_chart_dict = {}
+            mad_chart_dict = {}
+            for k,g in groupby(parsed_rows , lambda k:k["model_type"]):
+                sorted_dict_list = sorted(g, key= lambda k: k["starttime_val"])
+                x_list = [d["starttime"] for d in sorted_dict_list]
+                mape_list = [d["mape"] for d in sorted_dict_list]
+                mad_list =  [d["mad"] for d in sorted_dict_list]
+                mape_chart_dict[k] = { "x" : x_list , "y" : mape_list}
+                mad_chart_dict[k] = {"x" : x_list , "y" : mad_list}
+
+            response["mape_charts"] = mape_chart_dict
+            response["mad_charts"] = mad_chart_dict
+
+            #     Rolling 24-hour hit accuracy
+            rolling_length = 24
+            hits_chart_dict = {}
+            for k,g in groupby(parsed_rows , lambda k:k["model_type"]):
+                sorted_dict_list = sorted(g, key= lambda k: k["starttime_val"])
+                x_list = [d["starttime"] for d in sorted_dict_list]
+                all_hit_list = [ d["hit"] for d in sorted_dict_list]
+                all_directionAccuracy_list = [ d["directionaccuracy"] for d in sorted_dict_list]
+
+                date_list = []
+                hits_pct_list =[]
+
+                for offset in range(0,15):
+
+                    from_index = 0 -offset - rolling_length
+                    to_index = 0-offset
+                    print("all hit list " + str(len(all_hit_list)))
+                    print("From " + str(from_index) + " to " + str(to_index))
+
+                    if to_index == 0:
+                        hit_list = all_hit_list[ from_index:]
+                    else:
+                        hit_list = all_hit_list[from_index: to_index]
+                    hit_count = hit_list.count(1)
+                    missed_count = hit_list.count(0)
+
+                    hit_pct = 100.0* hit_count/ len(hit_list)
+
+                    date_list.append(x_list[to_index-1])
+                    hits_pct_list.append( hit_pct )
+                    print(x_list[to_index-1])
+
+                    print( "total leng" + str(len(hit_list)) + ".hits " + str(hit_count) + ". misses " + str(missed_count))
+                    print("24 hour list length " + str(len(sorted_dict_list)))
+
+                hits_chart_dict[k] = { "x" : date_list , "y" : hits_pct_list}
+
+            response["hits_chart"] = hits_chart_dict
+
+            # Rolling direction accuracy
 
         return Response(response)
 
