@@ -1,16 +1,20 @@
 
 import itertools
-d_list = []
+import json
 
-d_list.append( { "id" : 1 , "type" : "a" , "count" :2})
-d_list.append( { "id" : 2 , "type" : "a" , "count" :3})
-d_list.append( { "id" : 3 , "type" : "b" , "count" :12})
-d_list.append( { "id" : 4 , "type" : "b" , "count" :22})
-d_list.append( { "id" : 1 , "type" : "b" , "count" :222})
-d_list.append( { "id" : 2 , "type" : "b" , "count" :24})
-d_list.append( { "id" : 4 , "type" : "c" , "count" :52})
+f = open("test.json" , "r")
+json_data = json.load(f)
+d_list = json_data["results"]
 
-for k,v in itertools.groupby(d_list , key = lambda x:x["type"]):
+# d_list.append( { "id" : 1 , "model_type" : "a" , "count" :2})
+# d_list.append( { "id" : 2 , "model_type" : "a" , "count" :3})
+# d_list.append( { "id" : 3 , "model_type" : "b" , "count" :12})
+# d_list.append( { "id" : 4 , "model_type" : "b" , "count" :22})
+# d_list.append( { "id" : 1 , "model_type" : "b" , "count" :222})
+# d_list.append( { "id" : 2 , "model_type" : "b" , "count" :24})
+# d_list.append( { "id" : 4 , "model_type" : "c" , "count" :52})
+
+for k,v in itertools.groupby(d_list , key = lambda x:x["model_type"]):
     print("********")
     print(k)
 

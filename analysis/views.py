@@ -1593,6 +1593,55 @@ class HourlyForecastAccuracySummary(APIView):
 
         print("")
 
+class CoinPairRolling48hMetricsView(APIView):
+
+    def post(self, request):
+
+        response = {}
+
+        if "coinpair" in request.data.keys() and "market" in request.data.keys():
+            coinpair = request.data["coinpair"]
+            market = request.data["market"]
+
+            startTime = Utils.getTradingStartTime()
+            past48hTime = startTime - timedelta(hours=48)
+
+            rollingMetricsArgs = {}
+            rollingMetricsArgs["starttime__gte"] = past48hTime
+            rollingMetricsArgs["coinpair"] = coinpair
+            rollingMetricsArgs["market"] = market
+
+            arguments = ["coinpair", "market", "starttime", "model_type", "hits_pct", "diraccuracy_pct"]
+
+            rows = Rolling48Hmetrics.objects.filter(**rollingMetricsArgs).values(*arguments)
+
+            print("length oif rows " + str(len(rows)))
+
+            # group by model types
+            coinpairMarketDict = {}
+
+            sorted_rows = sorted( rows, key= lambda x: x["model_type"])
+
+            for key,value_dicts in itertools.groupby(sorted_rows , key=lambda x:x["model_type"]):
+                print( key)
+                sorted_list =sorted(value_dicts, key= lambda item: item["starttime"])
+
+                sorted_datetime = [d["starttime"] for d in sorted_list]
+                hits_pct_list = [d["hits_pct"] for d in sorted_list]
+                diraccuracy_pct_list = [d["diraccuracy_pct"] for d in sorted_list]
+
+                print("datetime list " + str(len(sorted_datetime)))
+                print("len data " + str(len(hits_pct_list)))
+                print("diraccuracy " + str(len(diraccuracy_pct_list)))
+                coinpairMarketDict[key] = { "datetime_list" : sorted_datetime , "hits_pct_list" : hits_pct_list , "diraccuracy_pct_list" : diraccuracy_pct_list}
+
+            response["results"] = coinpairMarketDict
+
+
+        return Response(response)
+
+
+
 class Rolling48hMetricsView(APIView):
 
     def post(self, request):
@@ -1647,7 +1696,7 @@ class Rolling48hMetricsView(APIView):
         response["most_inacc_diracc"] = most_inacc_diracc_table_data
 
 
-        return response
+        return Response(response)
 
 
 
@@ -1668,10 +1717,7 @@ class CoinPairMarketForecastAccuracyView(APIView):
             startTime = Utils.getTradingStartTime()
             past_48h_startTime = startTime - timedelta(hours=48)
 
-            coinpairMarketArgs = {}
-            coinpairMarketArgs["starttime__gte"] = past_48h_startTime
-            coinpairMarketArgs["coinpair"] = coinpair
-            coinpairMarketArgs["market"] = market
+
 
             arguments = ["coinpair" , "market" , "prevstarttime" , "mad" , "mape" , "nfm" , "model_type" , "starttime" , "hit" , "directionaccuracy"]
 
