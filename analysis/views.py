@@ -1655,12 +1655,12 @@ class Rolling48hMetricsView(APIView):
 
         rows = Rolling48Hmetrics.objects.filter(**rollingMetricsArgs).values(*arguments)
 
-        sorted_hits_list = sorted(rows , key = lambda k:k["hits_pct"] )
+        sorted_hits_list = sorted(rows , key = lambda k:k["hits_pct"] , reverse= True)
 
         most_acc_hits = sorted_hits_list[:10]
         most_inacc_hits = sorted_hits_list[-10:]
 
-        sorted_diracc_list = sorted(rows , key= lambda k:k["diraccuracy_pct"])
+        sorted_diracc_list = sorted(rows , key= lambda k:k["diraccuracy_pct"], reverse= True)
         most_acc_diracc = sorted_diracc_list[:10]
         most_inacc_diracc = sorted_diracc_list[-10:]
 
@@ -1684,12 +1684,33 @@ class Rolling48hMetricsView(APIView):
             }
         ]
 
-        most_acc_hits_table_data = Utils.getTableData(hitstableheaders, most_acc_hits )
-        most_inacc_hits_table_data =  Utils.getTableData( hitstableheaders , most_acc_hits)
-        most_acc_diracc_table_data = Utils.getTableData(hitstableheaders , most_acc_diracc)
-        most_inacc_diracc_table_data = Utils.getTableData(hitstableheaders, most_inacc_diracc)
+        dirAccstableheaders = [{
+            "key": "market",
+            "name": "Market"
+        },
+            {
+                "key": "coinpair",
+                "name": "Coinpair"
+            }
+            ,
+            {
+                "key": "model_type",
+                "name": "Model"
+            }
+            ,
+            {
+                "key": "diraccuracy_pct",
+                "name": "Direction Accuracy (%)"
+            }
+        ]
 
-        response["headers"] = hitstableheaders
+        most_acc_hits_table_data = Utils.getTableData(hitstableheaders, most_acc_hits )
+        most_inacc_hits_table_data =  Utils.getTableData( hitstableheaders , most_inacc_hits)
+        most_acc_diracc_table_data = Utils.getTableData(dirAccstableheaders , most_acc_diracc)
+        most_inacc_diracc_table_data = Utils.getTableData(dirAccstableheaders, most_inacc_diracc)
+
+        response["hitsheaders"] = hitstableheaders
+        response["diraccheaders"] = dirAccstableheaders
         response["most_acc_hits"] = most_acc_hits_table_data
         response["most_inacc_hits"] = most_inacc_hits_table_data
         response["most_acc_diracc"] = most_acc_diracc_table_data
@@ -1716,6 +1737,11 @@ class CoinPairMarketForecastAccuracyView(APIView):
 
             startTime = Utils.getTradingStartTime()
             past_48h_startTime = startTime - timedelta(hours=48)
+
+            coinpairMarketArgs = {}
+            coinpairMarketArgs["starttime__gte"] = past_48h_startTime
+            coinpairMarketArgs["market"] = market
+            coinpairMarketArgs["coinpair"] = coinpair
 
 
 
