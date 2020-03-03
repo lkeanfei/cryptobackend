@@ -32,7 +32,10 @@ class Utils:
         for data_dict in data_dict_list:
             rowDict = {}
             for header in headers:
-                cellDict = {"value": data_dict[header["key"]], "type": Utils.getVarType(data_dict[header["key"]])}
+                if header["key"] == "coinpair":
+                    cellDict = {"value": data_dict[header["key"]], "type": "link" , "link" : "/coinpair/" + data_dict[header["key"]] }
+                else:
+                    cellDict = {"value": data_dict[header["key"]], "type": Utils.getVarType(data_dict[header["key"]])}
                 rowDict[header["key"]] = cellDict
             row_list.append(rowDict)
 
@@ -1597,7 +1600,7 @@ class CoinPairRolling48hMetricsView(APIView):
 
     def post(self, request):
 
-        response = {}
+        coinpairMarketDict = {}
 
         if "coinpair" in request.data.keys() and "market" in request.data.keys():
             coinpair = request.data["coinpair"]
@@ -1618,7 +1621,7 @@ class CoinPairRolling48hMetricsView(APIView):
             print("length oif rows " + str(len(rows)))
 
             # group by model types
-            coinpairMarketDict = {}
+
 
             sorted_rows = sorted( rows, key= lambda x: x["model_type"])
 
@@ -1635,10 +1638,9 @@ class CoinPairRolling48hMetricsView(APIView):
                 print("diraccuracy " + str(len(diraccuracy_pct_list)))
                 coinpairMarketDict[key] = { "datetime_list" : sorted_datetime , "hits_pct_list" : hits_pct_list , "diraccuracy_pct_list" : diraccuracy_pct_list}
 
-            response["results"] = coinpairMarketDict
 
 
-        return Response(response)
+        return Response(coinpairMarketDict)
 
 
 
